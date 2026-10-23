@@ -9,6 +9,8 @@ class TrafficStatistics:
         self.protocols = Counter()
         self.ports = Counter()
         self.hosts = Counter()
+        self.host_bytes = Counter()
+        self.timeline = Counter()
         self.connections = Counter()
 
     def update(self, packet):
@@ -19,6 +21,9 @@ class TrafficStatistics:
 
         self.hosts[packet.source] += 1
         self.hosts[packet.destination] += 1
+        self.host_bytes[packet.source] += packet.size
+        self.host_bytes[packet.destination] += packet.size
+        self.timeline[int(packet.timestamp)] += packet.size
 
         if packet.source_port is not None:
             self.ports[packet.source_port] += 1

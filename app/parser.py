@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from scapy.layers.inet import IP, TCP, UDP, ICMP
 from scapy.layers.inet6 import IPv6
+from scapy.layers.l2 import ARP, Ether
 
 from app.services import service_name
 
@@ -23,6 +24,9 @@ class PacketInfo:
     window: int | None = None
 
     info: str = ""
+    ttl: int | None = None
+    source_mac: str = ""
+    destination_mac: str = ""
 
 
 def get_tcp_flags(tcp):
@@ -63,14 +67,19 @@ def parse_packet(packet):
     seq = None
     ack = None
     window = None
+    ttl = None
+    source_mac = packet[Ether].src if packet.haslayer(Ether) else ""
+    destination_mac = packet[Ether].dst if packet.haslayer(Ether) else ""
 
     if packet.haslayer(IP):
         source = packet[IP].src
         destination = packet[IP].dst
+        ttl = int(packet[IP].ttl)
 
     elif packet.haslayer(IPv6):
         source = packet[IPv6].src
         destination = packet[IPv6].dst
+        ttl = int(packet[IPv6].hlim)
 
     if packet.haslayer(TCP):
         tcp = packet[TCP]
@@ -109,6 +118,17 @@ def parse_packet(packet):
         protocol = "ICMP"
         info = "ICMP packet"
 
+    elif packet.haslayer(ARP):
+        arp = packet[ARP]
+        protocol = "ARP"
+        source = arp.psrc
+        destination = arp.pdst
+        info = f"{arp.sprintf('%ARP.op%')} {source} -> {destination}"
+
+    elif packet.haslayer(IPv6) and any(layer.__name__.startswith("ICMPv6") for layer in packet.layers()):
+        protocol = "ICMPv6"
+        info = "ICMPv6 packet"
+
     elif packet.haslayer(IPv6):
         protocol = "IPv6"
         info = "IPv6 packet"
@@ -129,4 +149,7 @@ def parse_packet(packet):
         ack=ack,
         window=window,
         info=info,
+        ttl=ttl,
+        source_mac=source_mac,
+        destination_mac=destination_mac,
     )

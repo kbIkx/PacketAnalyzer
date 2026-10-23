@@ -15,6 +15,8 @@ class Connection:
 
     state: str = "UNKNOWN"
     flags: str = ""
+    first_seen: float = 0
+    last_seen: float = 0
 
 
 class ConnectionTracker:
@@ -42,24 +44,17 @@ class ConnectionTracker:
                 source_port=packet.source_port,
                 destination=packet.destination,
                 destination_port=packet.destination_port,
+                first_seen=packet.timestamp,
             )
 
         connection = self.connections[key]
 
         connection.packets += 1
         connection.bytes += packet.size
-        connection.flags = packet.flags
+        connection.last_seen = packet.timestamp
+        connection.flags = ",".join(sorted(set(filter(None, connection.flags.split(","))) | set(filter(None, packet.flags.split(",")))))
 
-        if "RST" in packet.flags:
-            connection.state = "RESET"
-        elif "FIN" in packet.flags:
-            connection.state = "CLOSING"
-        elif "SYN" in packet.flags and "ACK" not in packet.flags:
-            connection.state = "SYN"
-        elif "SYN" in packet.flags and "ACK" in packet.flags:
-            connection.state = "SYN-ACK"
-        elif "ACK" in packet.flags:
-            connection.state = "ESTABLISHED"
+        connection.state = "Observed only"
 
     def all(self):
         return list(self.connections.values())

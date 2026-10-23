@@ -35,11 +35,11 @@ def test_port_filter():
 
 def test_host_filter():
     packet = make_packet(
-        source="192.168.0.21",
+        source="192.0.2.21",
         destination="8.8.8.8",
     )
 
-    assert PacketFilter(host="192.168.0.21").matches(packet)
+    assert PacketFilter(host="192.0.2.21").matches(packet)
     assert PacketFilter(host="8.8.8.8").matches(packet)
     assert not PacketFilter(host="1.1.1.1").matches(packet)
 

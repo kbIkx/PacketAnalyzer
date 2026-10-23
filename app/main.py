@@ -1,6 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
+from scapy.utils import PcapWriter
 
 sys.path.insert(
     0,
@@ -11,7 +12,7 @@ from app.capture import PacketCapture
 from app.connections import ConnectionTracker
 from app.filters import PacketFilter
 from app.parser import parse_packet
-from app.pcap import read_packets, save_packets
+from app.pcap import read_packets
 from app.statistics import TrafficStatistics, print_connections
 
 
@@ -22,7 +23,7 @@ def build_parser():
 
     parser.add_argument(
         "--protocol",
-        choices=["tcp", "udp", "icmp", "ipv6"],
+        choices=["tcp", "udp", "icmp", "icmpv6", "arp", "ipv6"],
         help="Filter by protocol",
     )
 
@@ -90,11 +91,17 @@ def main():
     stats = TrafficStatistics()
     tracker = ConnectionTracker()
 
-    saved_packets = []
+    writer = None
+    saved_count = 0
 
     def process(packet, save=True):
-        if save:
-            saved_packets.append(packet)
+        nonlocal writer, saved_count
+        if save and args.save:
+            if writer is None:
+                Path(args.save).parent.mkdir(parents=True, exist_ok=True)
+                writer = PcapWriter(args.save, sync=True)
+            writer.write(packet)
+            saved_count += 1
 
         info = parse_packet(packet)
 
@@ -153,19 +160,17 @@ def main():
     except KeyboardInterrupt:
         print()
         print("Capture stopped.")
+    finally:
+        if writer is not None:
+            writer.close()
 
     # ---------------------------------------------------------
     # SAVE
     # ---------------------------------------------------------
 
     if args.save:
-        save_packets(
-            saved_packets,
-            args.save,
-        )
-
         print(
-            f"Saved {len(saved_packets)} "
+            f"Saved {saved_count} "
             f"packets to {args.save}"
         )
 

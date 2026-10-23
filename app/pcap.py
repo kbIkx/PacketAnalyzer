@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from scapy.all import rdpcap, wrpcap
+from scapy.all import PcapReader, wrpcap
 
 
 def save_packets(packets, path):
@@ -12,4 +12,10 @@ def save_packets(packets, path):
 
 
 def read_packets(path):
-    return rdpcap(str(path))
+    with PcapReader(str(path)) as reader:
+        return list(reader)
+
+
+def iter_packets(path):
+    with PcapReader(str(path)) as reader:
+        yield from reader
