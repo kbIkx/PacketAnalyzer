@@ -13,14 +13,18 @@ from app.pcap import iter_packets, read_packets, save_packets
 from app.statistics import TrafficStatistics
 
 
+def eth():
+    return Ether(src="02:00:00:00:00:01", dst="02:00:00:00:00:02")
+
+
 @pytest.mark.parametrize("packet,protocol", [
-    (Ether()/IP(src="10.0.0.1", dst="10.0.0.2")/TCP(sport=1234, dport=443, flags="S"), "TCP"),
-    (Ether()/IP()/UDP(sport=53, dport=50000), "UDP"),
-    (Ether()/IP()/ICMP(), "ICMP"),
-    (Ether()/ARP(psrc="10.0.0.1", pdst="10.0.0.2"), "ARP"),
-    (Ether()/IPv6(src="2001:db8::1", dst="2001:db8::2")/ICMPv6EchoRequest(), "ICMPv6"),
-    (Ether()/IPv6()/TCP(sport=5, dport=6), "TCP"),
-    (Ether(), "OTHER"),
+    (eth()/IP(src="10.0.0.1", dst="10.0.0.2")/TCP(sport=1234, dport=443, flags="S"), "TCP"),
+    (eth()/IP(src="192.0.2.1", dst="198.51.100.2")/UDP(sport=53, dport=50000), "UDP"),
+    (eth()/IP(src="192.0.2.1", dst="198.51.100.2")/ICMP(), "ICMP"),
+    (eth()/ARP(psrc="10.0.0.1", pdst="10.0.0.2"), "ARP"),
+    (eth()/IPv6(src="2001:db8::1", dst="2001:db8::2")/ICMPv6EchoRequest(), "ICMPv6"),
+    (eth()/IPv6(src="2001:db8::1", dst="2001:db8::2")/TCP(sport=5, dport=6), "TCP"),
+    (eth(), "OTHER"),
 ])
 def test_parser_protocols(packet, protocol):
     info = parse_packet(packet)
@@ -29,7 +33,7 @@ def test_parser_protocols(packet, protocol):
 
 
 def test_filter_by_each_endpoint_and_text():
-    info = parse_packet(Ether()/IP(src="10.0.0.1", dst="10.0.0.2")/TCP(sport=1234, dport=443))
+    info = parse_packet(eth()/IP(src="10.0.0.1", dst="10.0.0.2")/TCP(sport=1234, dport=443))
     assert PacketFilter(source="10.0.0.1", destination="10.0.0.2",
                         source_port=1234, destination_port=443, text="443").matches(info)
     assert PacketFilter(host="10.0.0.2", port=1234).matches(info)
@@ -38,8 +42,8 @@ def test_filter_by_each_endpoint_and_text():
 
 
 def test_statistics_and_bidirectional_flow():
-    first = parse_packet(Ether()/IP(src="10.0.0.1", dst="10.0.0.2")/TCP(sport=5, dport=6, flags="S"))
-    second = parse_packet(Ether()/IP(src="10.0.0.2", dst="10.0.0.1")/TCP(sport=6, dport=5, flags="A"))
+    first = parse_packet(eth()/IP(src="10.0.0.1", dst="10.0.0.2")/TCP(sport=5, dport=6, flags="S"))
+    second = parse_packet(eth()/IP(src="10.0.0.2", dst="10.0.0.1")/TCP(sport=6, dport=5, flags="A"))
     stats = TrafficStatistics()
     tracker = ConnectionTracker()
     for info in (first, second):
@@ -57,7 +61,7 @@ def test_statistics_and_bidirectional_flow():
 
 def test_pcap_roundtrip_and_bad_file(tmp_path):
     path = tmp_path / "synthetic.pcap"
-    packet = Ether()/IP()/UDP(sport=1234, dport=53)
+    packet = eth()/IP(src="192.0.2.1", dst="198.51.100.2")/UDP(sport=1234, dport=53)
     save_packets([packet], path)
     assert len(read_packets(path)) == 1
     assert len(list(iter_packets(path))) == 1
