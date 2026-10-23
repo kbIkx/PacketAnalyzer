@@ -6,12 +6,15 @@ A Windows desktop packet analyzer built with Python, Scapy and PySide6. Inspect 
 
 _Actual application window rendered with synthetic documentation IP addresses. No private capture data is included. Recreate it with `python screenshots/generate_demo.py`._
 
+![Statistics page with synthetic demo traffic](screenshots/statistics.png)
+
 ## Features
 
 - Live capture from dynamically discovered interfaces, with start/stop controls and a responsive GUI.
 - Sortable, protocol-colored packet table; TCP, UDP, ICMP, ICMPv6, ARP, IPv4 and IPv6 parsing.
 - Display filters for protocol, source/destination/either IP, source/destination/either port, and metadata text. These are **display filters**, not BPF or Wireshark syntax.
-- Packet detail view with present fields, Scapy layer structure, and hex bytes.
+- Packet inspector with a protocol tree and offset/hex/ASCII bytes.
+- Sidebar navigation, keyboard shortcuts, packet context menu, and saved inspector split sizes.
 - Background PCAP loading; export all currently retained packets to PCAP or displayed packet metadata to CSV.
 - Packet and byte counts, timeline, protocol and top-talker charts, and observed TCP flows.
 - Configurable GUI memory limit, pause display, auto scroll, and saved interface/limit/directory preferences.

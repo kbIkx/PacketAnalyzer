@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QSortFilterProxyModel, Qt
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QFont
 
 from app.filters import PacketFilter
 
@@ -16,8 +16,8 @@ class PacketRow:
 
 class PacketTableModel(QAbstractTableModel):
     HEADERS = ("No.", "Time", "Source", "Destination", "Protocol", "Length", "Info")
-    COLORS = {"TCP": "#193b45", "UDP": "#33395c", "ICMP": "#4b373f",
-              "ICMPv6": "#4b373f", "ARP": "#594427"}
+    ACCENTS = {"TCP": "#69B9F2", "UDP": "#62D6C3", "ICMP": "#E5B662",
+               "ICMPv6": "#E5B662", "ARP": "#B996F5"}
 
     def __init__(self, maximum=10000):
         super().__init__()
@@ -47,10 +47,16 @@ class PacketTableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.UserRole:
             return (row.number, info.timestamp, info.source, info.destination,
                     info.protocol, info.size, info.info)[index.column()]
-        if role == Qt.ItemDataRole.BackgroundRole:
-            return QColor(self.COLORS.get(info.protocol, "#252b37"))
         if role == Qt.ItemDataRole.ForegroundRole:
-            return QColor("#e8edf5")
+            return QColor(self.ACCENTS.get(info.protocol, "#AEBED0") if index.column() == 4 else "#DCE6F1")
+        if role == Qt.ItemDataRole.ToolTipRole:
+            return str(values[index.column()])
+        if role == Qt.ItemDataRole.FontRole:
+            font = QFont("Consolas" if index.column() in (0, 1, 2, 3, 5) else "Segoe UI", 9)
+            font.setBold(index.column() == 4)
+            return font
+        if role == Qt.ItemDataRole.TextAlignmentRole and index.column() in (0, 5):
+            return Qt.AlignmentFlag.AlignCenter
         return None
 
     def append(self, rows):

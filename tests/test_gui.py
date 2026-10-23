@@ -20,6 +20,12 @@ def test_gui_table_filter_pause_and_pcap_io(tmp_path, monkeypatch):
         window.events.put((window.generation, "packet", packet, parse_packet(packet)))
         window._drain()
         assert window.model.rowCount() == window.proxy.rowCount() == 1
+        window.table.selectRow(0)
+        assert window.details.tree.topLevelItemCount() >= 2
+        assert window.details.hex.toPlainText().startswith("00000000")
+        window._set_page(1)
+        assert window.workspace_tabs.currentIndex() == 1
+        window._set_page(0)
         window.inputs["source"].setText("203.0.113.1")
         window.apply_filters()
         assert window.proxy.rowCount() == 0
